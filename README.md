@@ -95,4 +95,3 @@
 - [OpenStreetMap](https://www.openstreetmap.org/)
 - [LH 토지주택연구원](https://lhri.lh.or.kr/web/rsrchReprt/RsrchReprtForm.do?reprtId=1870)
 
-분석 결과를 인용하거나 재사용할 경우 데이터 제공기관, 기준 시점, 분석경계 및 면적가중 추정 방식을 함께 밝혀야 합니다.
