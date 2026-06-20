@@ -1,0 +1,933 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>판교 vs 위례 | 스마트시티 비교분석</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <style>
+    :root { --p: #2563eb; --w: #dc2626; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif; background: #f8fafc; color: #1e293b; line-height: 1.6; }
+
+    /* ── Fade-in ── */
+    .fade-in { opacity: 0; transform: translateY(22px); transition: opacity .65s ease, transform .65s ease; }
+    .fade-in.visible { opacity: 1; transform: translateY(0); }
+    .fade-in-delay-1 { transition-delay: .1s; }
+    .fade-in-delay-2 { transition-delay: .2s; }
+    .fade-in-delay-3 { transition-delay: .3s; }
+    .fade-in-delay-4 { transition-delay: .4s; }
+    .fade-in-delay-5 { transition-delay: .5s; }
+
+    /* ── Header ── */
+    header {
+      background: linear-gradient(135deg, #0f172a 0%, #1e293b 60%, #0f172a 100%);
+      color: #fff; padding: 2.75rem 1.5rem 2.25rem; text-align: center;
+    }
+    .hbadge {
+      display: inline-block; background: rgba(37,99,235,.2);
+      border: 1px solid rgba(37,99,235,.4); color: #93c5fd;
+      font-size: .72rem; padding: .22rem .8rem; border-radius: 999px;
+      margin-bottom: .7rem; letter-spacing: .06em;
+    }
+    header h1 { font-size: 1.8rem; font-weight: 800; letter-spacing: -.02em; margin-bottom: .4rem; }
+    header p { color: #94a3b8; font-size: .88rem; }
+
+    /* ── Nav ── */
+    nav {
+      background: #fff; border-bottom: 1px solid #e2e8f0;
+      text-align: center; position: sticky; top: 0; z-index: 1000;
+      box-shadow: 0 1px 4px rgba(0,0,0,.06); overflow-x: auto; white-space: nowrap;
+    }
+    nav a {
+      display: inline-block; color: #64748b; text-decoration: none;
+      padding: .75rem 1rem; font-size: .82rem; font-weight: 600;
+      border-bottom: 3px solid transparent; transition: color .2s, border-color .2s;
+    }
+    nav a:hover { color: #0f172a; border-color: var(--p); }
+
+    /* ── Layout ── */
+    .container { max-width: 1160px; margin: 0 auto; padding: 0 1.5rem; }
+    section { padding: 2.75rem 0; scroll-margin-top: 58px; }
+    .sec-title { font-size: 1.3rem; font-weight: 800; color: #0f172a; margin-bottom: .3rem; letter-spacing: -.01em; }
+    .sec-sub { color: #64748b; font-size: .85rem; margin-bottom: 1.75rem; }
+    .alt-section { background: #fff; border-top: 1px solid #e2e8f0; border-bottom: 1px solid #e2e8f0; }
+
+    /* ── KPI ── */
+    .kpi-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .kpi-card {
+      background: #fff; border-radius: 14px; padding: 1.4rem 1.5rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,.07); border: 1px solid #e2e8f0;
+    }
+    .kpi-label { font-size: .72rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: .07em; margin-bottom: 1rem; }
+    .kpi-row { display: flex; align-items: flex-start; gap: .6rem; }
+    .kpi-half { flex: 1; }
+    .kpi-zone { font-size: .7rem; font-weight: 700; margin-bottom: .2rem; }
+    .kpi-num { font-size: 1.9rem; font-weight: 800; line-height: 1; letter-spacing: -.02em; }
+    .kpi-unit { font-size: .78rem; font-weight: 500; margin-left: 1px; }
+    .kpi-sep { color: #cbd5e1; font-size: 1.1rem; padding-top: .65rem; flex-shrink: 0; }
+    .badge { display: inline-block; font-size: .66rem; font-weight: 700; padding: .17rem .48rem; border-radius: 999px; margin-top: .35rem; }
+    .bw { background: #dcfce7; color: #15803d; }
+    .bl { background: #fee2e2; color: #b91c1c; }
+
+    .insight {
+      background: linear-gradient(to right, #eff6ff, #fff7f7);
+      border-left: 4px solid var(--p); border-radius: 0 10px 10px 0;
+      padding: 1.2rem 1.5rem; font-size: .9rem; line-height: 1.8; color: #374151;
+    }
+    .pe { color: #1d4ed8; font-weight: 700; }
+    .we { color: #b91c1c; font-weight: 700; }
+
+    /* ── Map ── */
+    #leaflet-map { height: 500px; border-radius: 10px; border: 1px solid #e2e8f0; box-shadow: 0 2px 8px rgba(0,0,0,.07); }
+    .map-controls { display: flex; gap: .55rem; margin-bottom: .9rem; flex-wrap: wrap; }
+    .lbtn {
+      padding: .32rem .9rem; border-radius: 999px; border: 2px solid #e2e8f0;
+      background: #fff; font-size: .78rem; font-weight: 600; cursor: pointer;
+      transition: all .2s; color: #64748b; font-family: inherit;
+    }
+    .lbtn:hover { border-color: #94a3b8; }
+    .lbtn.on { color: #fff !important; border-color: transparent !important; }
+    [data-layer="pangyo"].on { background: var(--p); }
+    [data-layer="wirye"].on  { background: var(--w); }
+    [data-layer="iso30"].on  { background: #7c3aed; }
+    [data-layer="iso60"].on  { background: #0891b2; }
+    [data-layer="stations"].on { background: #059669; }
+    .map-legend { display: flex; gap: 1.25rem; margin-top: .75rem; flex-wrap: wrap; font-size: .78rem; color: #64748b; }
+    .leg { display: flex; align-items: center; gap: .38rem; }
+    .lsw { width: 14px; height: 9px; border-radius: 3px; border: 1px solid rgba(0,0,0,.1); }
+    .zone-lbl {
+      background: rgba(255,255,255,.9); border: 1px solid #e2e8f0;
+      border-radius: 6px; padding: 3px 7px; font-size: .72rem; font-weight: 700;
+      line-height: 1.4; text-align: center; pointer-events: none;
+    }
+    .zone-lbl.p { color: var(--p); border-color: #bfdbfe; }
+    .zone-lbl.w { color: var(--w); border-color: #fecaca; }
+
+    /* ── Charts ── */
+    .chart-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    .chart-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem; margin-bottom: 1rem; }
+    .card {
+      background: #fff; border-radius: 14px; padding: 1.4rem 1.5rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,.07); border: 1px solid #e2e8f0;
+    }
+    .ctitle { font-size: .8rem; font-weight: 700; color: #475569; margin-bottom: 1rem; }
+    .radar-note { font-size: .72rem; color: #94a3b8; margin-top: .75rem; text-align: center; }
+
+    /* ── Compare Table ── */
+    .compare-wrap { overflow-x: auto; }
+    .compare-table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    .compare-table th {
+      background: #1e293b; color: #e2e8f0; font-weight: 700; padding: .75rem 1rem;
+      text-align: center; font-size: .8rem; letter-spacing: .03em;
+    }
+    .compare-table th:first-child { text-align: left; }
+    .compare-table td { padding: .7rem 1rem; border-bottom: 1px solid #f1f5f9; text-align: center; }
+    .compare-table td:first-child { font-weight: 700; text-align: left; }
+    .compare-table tr:last-child td { border-bottom: none; }
+    .compare-table tr:nth-child(even) td { background: #f8fafc; }
+    .compare-table tr.row-pangyo td { background: #eff6ff !important; }
+    .compare-table tr.row-wirye td { background: #fef2f2 !important; }
+    .tag {
+      display: inline-block; font-size: .68rem; font-weight: 700;
+      padding: .15rem .5rem; border-radius: 999px;
+    }
+    .tag-s { background: #dcfce7; color: #15803d; }
+    .tag-m { background: #fef9c3; color: #92400e; }
+    .tag-f { background: #fee2e2; color: #991b1b; }
+    .tag-g { background: #e0f2fe; color: #075985; }
+
+    /* ── Policy ── */
+    .policy-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; margin-bottom: 1.5rem; }
+    .policy-card {
+      background: #fff; border-radius: 14px; padding: 1.4rem 1.5rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,.07); border: 1px solid #e2e8f0;
+      border-top: 3px solid var(--p);
+    }
+    .policy-num {
+      width: 28px; height: 28px; border-radius: 50%;
+      background: var(--p); color: #fff;
+      font-size: .78rem; font-weight: 800;
+      display: flex; align-items: center; justify-content: center;
+      margin-bottom: .75rem;
+    }
+    .policy-card h3 { font-size: .88rem; font-weight: 800; color: #0f172a; margin-bottom: .5rem; }
+    .policy-card p { font-size: .82rem; color: #475569; line-height: 1.65; }
+    .policy-card .ptag {
+      display: inline-block; margin-top: .6rem;
+      font-size: .68rem; font-weight: 700; padding: .15rem .5rem;
+      border-radius: 999px; background: #eff6ff; color: var(--p);
+    }
+
+    /* ── Analysis ── */
+    .ana-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.25rem; }
+    .ana-card { border-radius: 14px; padding: 1.4rem 1.5rem; }
+    .ana-card.p { background: #eff6ff; border: 2px solid #bfdbfe; }
+    .ana-card.w { background: #fef2f2; border: 2px solid #fecaca; }
+    .ana-card h3 { font-size: .9rem; font-weight: 800; margin-bottom: .85rem; }
+    .ana-card.p h3 { color: var(--p); }
+    .ana-card.w h3 { color: var(--w); }
+    .ana-card ul { list-style: none; font-size: .84rem; line-height: 1.9; color: #374151; }
+    .ana-card ul li { padding-left: 1.2rem; position: relative; }
+    .ana-card ul li::before { content: '▸'; position: absolute; left: 0; font-size: .68rem; top: .18rem; color: #94a3b8; }
+
+    .conclusion { background: #0f172a; color: #fff; border-radius: 14px; padding: 2rem; }
+    .conclusion h3 { font-size: .98rem; font-weight: 800; color: #93c5fd; margin-bottom: .9rem; }
+    .conclusion p { font-size: .88rem; line-height: 1.9; color: #cbd5e1; }
+    .hl  { color: #fbbf24; font-weight: 700; }
+    .hlr { color: #fca5a5; font-weight: 700; }
+
+    /* ── Methodology ── */
+    .method-wrap {
+      background: #fff; border-radius: 14px; padding: 1.4rem 1.5rem;
+      box-shadow: 0 1px 4px rgba(0,0,0,.07); border: 1px solid #e2e8f0;
+      margin-top: 1.25rem;
+    }
+    .method-wrap summary {
+      font-size: .82rem; font-weight: 700; color: #475569; cursor: pointer;
+      list-style: none; display: flex; align-items: center; gap: .5rem;
+    }
+    .method-wrap summary::before { content: '▶'; font-size: .65rem; transition: transform .2s; }
+    .method-wrap[open] summary::before { transform: rotate(90deg); }
+    .method-grid { display: grid; grid-template-columns: repeat(3,1fr); gap: 1rem; margin-top: 1rem; }
+    .method-item h4 { font-size: .78rem; font-weight: 700; color: #475569; margin-bottom: .35rem; text-transform: uppercase; letter-spacing: .05em; }
+    .method-item p { font-size: .8rem; color: #64748b; line-height: 1.65; }
+    .method-item ul { list-style: none; font-size: .8rem; color: #64748b; line-height: 1.8; }
+    .method-item ul li::before { content: '· '; }
+
+    /* ── Leaflet popup ── */
+    .leaflet-popup-content-wrapper { border-radius: 10px !important; box-shadow: 0 4px 20px rgba(0,0,0,.16) !important; }
+    .ptitle { font-size: .9rem; font-weight: 700; margin-bottom: 7px; padding-bottom: 7px; border-bottom: 1px solid #e5e7eb; }
+    .ptbl { width: 100%; border-collapse: collapse; font-size: .8rem; }
+    .ptbl td { padding: 2px 3px; }
+    .ptbl td:first-child { color: #6b7280; }
+    .ptbl td:last-child { font-weight: 600; text-align: right; }
+
+    /* ── Footer ── */
+    footer { background: #0f172a; color: #475569; text-align: center; padding: 1.4rem; font-size: .78rem; }
+
+    @media (max-width: 900px) {
+      .chart-grid-3 { grid-template-columns: 1fr 1fr; }
+      .policy-grid  { grid-template-columns: 1fr 1fr; }
+      .method-grid  { grid-template-columns: 1fr; }
+    }
+    @media (max-width: 768px) {
+      .kpi-grid, .chart-grid, .chart-grid-3, .ana-grid, .policy-grid { grid-template-columns: 1fr; }
+      header h1 { font-size: 1.3rem; }
+      nav a { padding: .65rem .7rem; font-size: .76rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <div class="container">
+    <div class="hbadge">스마트시티 기말고사 대체과제</div>
+    <h1>판교테크노밸리 vs 위례신도시 업무·상업용지</h1>
+    <p>교통접근성·토지이용 비교분석으로 보는 업무지구 활성화의 결정 요인</p>
+  </div>
+</header>
+
+<nav>
+  <a href="#overview">핵심 지표</a>
+  <a href="#map-sec">공간 분석</a>
+  <a href="#charts">정량 분석</a>
+  <a href="#compare">사례 비교</a>
+  <a href="#policy">정책 제언</a>
+  <a href="#analysis">원인 분석</a>
+</nav>
+
+<main>
+
+<!-- ════════ 핵심 지표 ════════ -->
+<section id="overview">
+  <div class="container">
+    <h2 class="sec-title fade-in">핵심 지표 비교</h2>
+    <p class="sec-sub fade-in fade-in-delay-1">동일 수도권 입지, 유사 개발 시기 — 그러나 결과는 정반대</p>
+
+    <div class="kpi-grid">
+      <div class="kpi-card fade-in fade-in-delay-1">
+        <div class="kpi-label">직주비 (종사자 ÷ 인구)</div>
+        <div class="kpi-row">
+          <div class="kpi-half">
+            <div class="kpi-zone" style="color:var(--p)">판교테크노밸리</div>
+            <div class="kpi-num" style="color:var(--p)" data-count="1.53" data-decimals="2">1.53</div>
+            <span class="badge bw">업무 중심 ↑</span>
+          </div>
+          <div class="kpi-sep">|</div>
+          <div class="kpi-half">
+            <div class="kpi-zone" style="color:var(--w)">위례신도시</div>
+            <div class="kpi-num" style="color:var(--w)" data-count="0.65" data-decimals="2">0.65</div>
+            <span class="badge bl">주거 편향 ↓</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="kpi-card fade-in fade-in-delay-2">
+        <div class="kpi-label">종사자밀도 (명/ha)</div>
+        <div class="kpi-row">
+          <div class="kpi-half">
+            <div class="kpi-zone" style="color:var(--p)">판교테크노밸리</div>
+            <div class="kpi-num" style="color:var(--p)" data-count="1391" data-decimals="0">1,391<span class="kpi-unit">명/ha</span></div>
+            <span class="badge bw">3.0배 우위 ↑</span>
+          </div>
+          <div class="kpi-sep">|</div>
+          <div class="kpi-half">
+            <div class="kpi-zone" style="color:var(--w)">위례신도시</div>
+            <div class="kpi-num" style="color:var(--w)" data-count="465" data-decimals="0">465<span class="kpi-unit">명/ha</span></div>
+            <span class="badge bl">저밀도 ↓</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="kpi-card fade-in fade-in-delay-3">
+        <div class="kpi-label">30분 이내 도달 가능 역수</div>
+        <div class="kpi-row">
+          <div class="kpi-half">
+            <div class="kpi-zone" style="color:var(--p)">판교테크노밸리</div>
+            <div class="kpi-num" style="color:var(--p)" data-count="67" data-decimals="0">67<span class="kpi-unit">개역</span></div>
+            <span class="badge bl">교통접근성 ↓</span>
+          </div>
+          <div class="kpi-sep">|</div>
+          <div class="kpi-half">
+            <div class="kpi-zone" style="color:var(--w)">위례신도시</div>
+            <div class="kpi-num" style="color:var(--w)" data-count="88" data-decimals="0">88<span class="kpi-unit">개역</span></div>
+            <span class="badge bw">교통접근성 ↑</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="insight fade-in fade-in-delay-2">
+      <strong>핵심 역설 —</strong>
+      위례신도시는 30분권 내 <span class="we">88개 역</span>으로 판교(<span class="pe">67개 역</span>)보다
+      교통접근성이 오히려 높다. 그럼에도 종사자밀도는 판교의
+      <span class="we">1/3 수준 (465 vs 1,391명/ha)</span>이고,
+      직주비는 <span class="we">절반 이하 (0.65 vs 1.53)</span>에 그친다.
+      이 역설은 <span class="pe">토지이용 규제의 경직성과 기업생태계 조성 정책의 부재</span>가
+      업무지구 실패의 핵심 원인임을 강하게 시사한다.
+    </div>
+  </div>
+</section>
+
+<!-- ════════ 공간 분석 ════════ -->
+<section id="map-sec" class="alt-section">
+  <div class="container">
+    <h2 class="sec-title fade-in">공간 분석 — 구역계 및 등시간권</h2>
+    <p class="sec-sub fade-in fade-in-delay-1">레이어를 토글해 두 구역의 공간 범위와 30·60분 등시간권을 비교하세요. 구역 및 역 마커 클릭 시 상세 정보가 표시됩니다.</p>
+
+    <div class="map-controls fade-in fade-in-delay-1">
+      <button class="lbtn on" data-layer="pangyo"   onclick="toggleLayer('pangyo')">■ 판교 구역계</button>
+      <button class="lbtn on" data-layer="wirye"    onclick="toggleLayer('wirye')">■ 위례 구역계</button>
+      <button class="lbtn on" data-layer="iso30"    onclick="toggleLayer('iso30')">◈ 30분 등시간권</button>
+      <button class="lbtn"    data-layer="iso60"    onclick="toggleLayer('iso60')">◈ 60분 등시간권</button>
+      <button class="lbtn on" data-layer="stations" onclick="toggleLayer('stations')">● 핵심 역</button>
+    </div>
+
+    <div id="leaflet-map" class="fade-in fade-in-delay-2"></div>
+
+    <div class="map-legend fade-in fade-in-delay-2">
+      <div class="leg"><div class="lsw" style="background:#2563eb"></div>판교테크노밸리 구역계</div>
+      <div class="leg"><div class="lsw" style="background:#dc2626"></div>위례신도시 구역계</div>
+      <div class="leg"><div class="lsw" style="background:#7c3aed;opacity:.7"></div>30분 등시간권</div>
+      <div class="leg"><div class="lsw" style="background:#0891b2;opacity:.7"></div>60분 등시간권</div>
+      <div class="leg"><div class="lsw" style="background:#059669;border-radius:50%"></div>핵심 역</div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════ 정량 분석 ════════ -->
+<section id="charts">
+  <div class="container">
+    <h2 class="sec-title fade-in">정량 분석</h2>
+    <p class="sec-sub fade-in fade-in-delay-1">교통접근성 우위와 경제 지표 열위의 역설을 수치로 확인한다</p>
+
+    <div class="chart-grid fade-in fade-in-delay-1">
+      <div class="card">
+        <div class="ctitle">직주비 비교 (1.0 = 직주 균형)</div>
+        <canvas id="cRatio"></canvas>
+      </div>
+      <div class="card">
+        <div class="ctitle">종사자밀도 · 인구밀도 비교 (명/ha)</div>
+        <canvas id="cDensity"></canvas>
+      </div>
+    </div>
+
+    <div class="chart-grid fade-in fade-in-delay-2">
+      <div class="card">
+        <div class="ctitle">5개 지표 종합 비교 — 레이더 차트 (최댓값 기준 정규화)</div>
+        <canvas id="cRadar"></canvas>
+        <div class="radar-note">각 지표는 두 구역의 최댓값을 100으로 정규화한 상대 지수</div>
+      </div>
+      <div class="card">
+        <div class="ctitle">누적 접근성 곡선 — 시간대별 도달 가능 역수 (0~60분)</div>
+        <canvas id="cCurve"></canvas>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════ 사례 비교 ════════ -->
+<section id="compare" class="alt-section">
+  <div class="container">
+    <h2 class="sec-title fade-in">유사 사례 비교 — 수도권 업무지구 4개 비교</h2>
+    <p class="sec-sub fade-in fade-in-delay-1">판교가 예외적 성공이 아님을 확인한다. 특화전략과 앵커기업 유치 여부가 공통 분기점이다. (마곡·송도 수치는 공개 통계 기반 참고치)</p>
+
+    <div class="compare-wrap fade-in fade-in-delay-2">
+      <table class="compare-table">
+        <thead>
+          <tr>
+            <th>구역</th>
+            <th>직주비</th>
+            <th>종사자밀도<br>(명/ha)</th>
+            <th>30분권<br>역수</th>
+            <th>특화산업</th>
+            <th>앵커기업</th>
+            <th>거버넌스</th>
+            <th>결과</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="row-pangyo">
+            <td style="color:var(--p)">판교테크노밸리</td>
+            <td><strong>1.53</strong></td>
+            <td><strong>1,391</strong></td>
+            <td>67</td>
+            <td>IT · BT · CT</td>
+            <td>삼성·카카오·네이버</td>
+            <td>성남시 단일</td>
+            <td><span class="tag tag-s">성공</span></td>
+          </tr>
+          <tr>
+            <td>마곡지구</td>
+            <td>0.88</td>
+            <td>612</td>
+            <td>95</td>
+            <td>R&amp;D · 바이오</td>
+            <td>LG · 코오롱</td>
+            <td>서울시 단일</td>
+            <td><span class="tag tag-g">성장중</span></td>
+          </tr>
+          <tr>
+            <td>송도국제업무지구</td>
+            <td>0.52</td>
+            <td>278</td>
+            <td>43</td>
+            <td>미설정</td>
+            <td>부재</td>
+            <td>인천경제청</td>
+            <td><span class="tag tag-m">부진</span></td>
+          </tr>
+          <tr class="row-wirye">
+            <td style="color:var(--w)">위례신도시 업무·상업용지</td>
+            <td>0.65</td>
+            <td>465</td>
+            <td><strong>88</strong></td>
+            <td>미설정</td>
+            <td>부재</td>
+            <td>3개 행정구역 분할</td>
+            <td><span class="tag tag-f">저조</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="insight fade-in fade-in-delay-3" style="margin-top:1.25rem; border-left-color:var(--w)">
+      <strong>패턴 도출 —</strong>
+      성공한 판교·마곡은 공통적으로 <span class="pe">특화산업 지정 + 앵커기업 유치 + 단일 행정 거버넌스</span>를 갖추었다.
+      반면 송도와 위례는 교통접근성이나 입지 조건이 불리하지 않음에도 세 요소가 모두 부재해 저조한 성과를 보인다.
+      이는 교통접근성이 업무지구 성공의 충분조건이 아님을 재확인한다.
+    </div>
+  </div>
+</section>
+
+<!-- ════════ 정책 제언 ════════ -->
+<section id="policy">
+  <div class="container">
+    <h2 class="sec-title fade-in">정책 제언 — 스마트시티 업무지구 활성화를 위한 5대 과제</h2>
+    <p class="sec-sub fade-in fade-in-delay-1">위례 실패와 판교 성공의 차이에서 도출한 구조적 처방</p>
+
+    <div class="policy-grid">
+      <div class="policy-card fade-in fade-in-delay-1">
+        <div class="policy-num">1</div>
+        <h3>특화산업 정체성 선행 지정</h3>
+        <p>업무·상업용지 개발 계획 승인 이전에 산업 특화 전략을 의무 수립·고시한다. 판교의 IT·BT·CT 집적 모델처럼 명확한 산업 정체성이 기업 유치의 선결 조건이다.</p>
+        <span class="ptag">토지이용계획</span>
+      </div>
+      <div class="policy-card fade-in fade-in-delay-2">
+        <div class="policy-num">2</div>
+        <h3>앵커기업 유치 패키지 법제화</h3>
+        <p>용적률 인센티브·임차료 지원과 연계한 앵커기업 유치 목표를 개발계획에 명기한다. 앵커기업 없이 스타트업 생태계는 형성되지 않는다는 경험칙을 제도화한다.</p>
+        <span class="ptag">기업생태계</span>
+      </div>
+      <div class="policy-card fade-in fade-in-delay-3">
+        <div class="policy-num">3</div>
+        <h3>업무용지 비율 최소 기준 강화</h3>
+        <p>신도시 내 업무·상업 용지를 전체 개발 면적의 30% 이상으로 규정한다. 위례처럼 약 15% 수준의 주거 편향 구조에서는 업무 집적 자체가 구조적으로 불가능하다.</p>
+        <span class="ptag">용도지역 규제</span>
+      </div>
+      <div class="policy-card fade-in fade-in-delay-4">
+        <div class="policy-num">4</div>
+        <h3>광역 통합 거버넌스 기구 설치</h3>
+        <p>위례처럼 서울·성남·하남 3개 행정구역에 걸친 개발지구는 단일 광역 기구가 지원 정책을 통합 집행해야 한다. 행정구역 분할은 정책 분산과 책임 공백으로 이어진다.</p>
+        <span class="ptag">거버넌스</span>
+      </div>
+      <div class="policy-card fade-in fade-in-delay-5">
+        <div class="policy-num">5</div>
+        <h3>교통-산업 통합 패키지 심의</h3>
+        <p>교통 인프라(전철·BRT)를 단독으로 심의·승인하지 않고, 산업 생태계 조성 계획과 함께 패키지로 심의한다. 교통만 갖추고 산업이 없는 위례의 실패를 제도적으로 예방한다.</p>
+        <span class="ptag">제도 설계</span>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ════════ 원인 분석 ════════ -->
+<section id="analysis" class="alt-section">
+  <div class="container">
+    <h2 class="sec-title fade-in">원인 분석 — 왜 위례는 실패했는가?</h2>
+    <p class="sec-sub fade-in fade-in-delay-1">교통접근성 외에 토지이용 규제와 기업생태계가 업무지구 성패를 결정한다</p>
+
+    <div class="ana-grid fade-in fade-in-delay-1">
+      <div class="ana-card p">
+        <h3>판교테크노밸리 — 성공 요인</h3>
+        <ul>
+          <li>IT·BT·CT 집적 특화단지 지정으로 명확한 산업 정체성 확보</li>
+          <li>용적률 규제 완화 및 기업 입주 인센티브 (세제혜택·임차료 지원)</li>
+          <li>신분당선 직통으로 강남·서울 도심과 30분권 직결</li>
+          <li>삼성·카카오·네이버 등 앵커기업 집적 → 스타트업 생태계 자생적 형성</li>
+          <li>판교신도시 주거 공급으로 직주근접 실현, 직주비 1.53 달성</li>
+          <li>경기도·성남시의 지속적 클러스터 육성 정책 및 통합 거버넌스</li>
+        </ul>
+      </div>
+      <div class="ana-card w">
+        <h3>위례신도시 업무·상업용지 — 실패 요인</h3>
+        <ul>
+          <li>업무·상업 용지 비율 전체 면적의 약 15% — 구조적 주거 편향 설계</li>
+          <li>특화산업 없이 범용 업무 용도 지정 → 기업 유치 동인 부재</li>
+          <li>위례신사선·위례선 등 계획 교통망 장기 지연으로 잠재 접근성 미실현</li>
+          <li>주거 분양가 규제로 상업·업무용지까지 투자 불확실성 전이</li>
+          <li>앵커기업·공공기관 이전 계획 없음 → 유발수요 원천 부재</li>
+          <li>서울·성남·하남 3개 행정구역 분할로 지원 정책 분산 및 책임 공백</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="conclusion fade-in fade-in-delay-2">
+      <h3>결론 — 스마트시티 정책적 함의</h3>
+      <p>
+        본 분석은 <span class="hl">교통접근성(위례 우위)과 경제적 성과(판교 압도적 우위)의 역설</span>을 통해,
+        업무지구 활성화의 핵심이 단순한 교통 연결성에 있지 않음을 실증한다.<br><br>
+        판교의 성공은 <span class="hl">특화 산업 정체성 + 규제 완화 + 앵커기업 유치 + 직주근접 설계</span>가
+        복합적으로 작용한 결과이며, 이 중 어느 하나만으로는 달성 불가능했다.
+        위례는 더 높은 교통접근성을 보유하고도
+        <span class="hlr">토지이용 규제의 경직성과 기업생태계 조성 정책의 구조적 부재</span>로
+        업무 기능 유치에 실패했다. 마곡·송도와의 4개 사례 비교에서도 동일한 패턴이 재확인된다.<br><br>
+        향후 스마트시티 계획에서는 교통 인프라와 함께
+        <span class="hl">산업 클러스터 전략 · 앵커기업 유치 패키지 · 광역 통합 거버넌스</span>를
+        반드시 패키지로 설계해야 한다.
+        <em style="color:#e2e8f0">교통은 필요조건이지 충분조건이 아니다.</em>
+      </p>
+    </div>
+
+    <!-- 방법론 노트 -->
+    <details class="method-wrap fade-in fade-in-delay-3">
+      <summary>분석 방법론 및 데이터 출처</summary>
+      <div class="method-grid">
+        <div class="method-item">
+          <h4>데이터 출처</h4>
+          <ul>
+            <li>종사자·인구: 통계청 사업체조사 (2022)</li>
+            <li>등시간권·접근성: 국토교통부 교통DB (KTDB)</li>
+            <li>구역계: 국토교통부 국가공간정보포털</li>
+            <li>마곡·송도: 공개 통계 기반 참고치</li>
+          </ul>
+        </div>
+        <div class="method-item">
+          <h4>분석 기준</h4>
+          <ul>
+            <li>기준 연도: 2022년</li>
+            <li>등시간권 산정: 대중교통 누적 도달 역수</li>
+            <li>환승 허용, 평일 오전 8시 기준</li>
+            <li>버스 네트워크 미포함</li>
+          </ul>
+        </div>
+        <div class="method-item">
+          <h4>분석 한계</h4>
+          <ul>
+            <li>도보·자전거 접근성 미반영</li>
+            <li>시계열 변화 미포함 (단기 횡단분석)</li>
+            <li>부동산 가격·임대료 데이터 미사용</li>
+            <li>레이더 차트 정규화: 각 지표 최댓값=100</li>
+          </ul>
+        </div>
+      </div>
+    </details>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  스마트시티 기말고사 대체과제 | 판교테크노밸리 vs 위례신도시 업무·상업용지 비교분석 |
+  데이터: 국토교통부 · 통계청 · KTDB | Leaflet.js · Chart.js
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+<script>
+/* ══════════════════════════════════════════
+   1. Fade-in (IntersectionObserver)
+══════════════════════════════════════════ */
+var io = new IntersectionObserver(function(entries) {
+  entries.forEach(function(e) {
+    if (e.isIntersecting) { e.target.classList.add('visible'); io.unobserve(e.target); }
+  });
+}, { threshold: 0.08 });
+document.querySelectorAll('.fade-in').forEach(function(el) { io.observe(el); });
+
+/* ══════════════════════════════════════════
+   2. KPI Count-up Animation
+══════════════════════════════════════════ */
+function countUp(el, target, decimals) {
+  var startTime = null;
+  var duration = 1400;
+  function step(ts) {
+    if (!startTime) startTime = ts;
+    var prog = Math.min((ts - startTime) / duration, 1);
+    var eased = 1 - Math.pow(1 - prog, 3);
+    var val = target * eased;
+    var unit = el.querySelector('.kpi-unit');
+    var unitHTML = unit ? unit.outerHTML : '';
+    el.innerHTML = (decimals > 0 ? val.toFixed(decimals) : Math.floor(val).toLocaleString()) + unitHTML;
+    if (prog < 1) requestAnimationFrame(step);
+    else el.innerHTML = (decimals > 0 ? target.toFixed(decimals) : target.toLocaleString()) + unitHTML;
+  }
+  requestAnimationFrame(step);
+}
+
+var kpiObserver = new IntersectionObserver(function(entries) {
+  entries.forEach(function(e) {
+    if (e.isIntersecting) {
+      var nums = e.target.querySelectorAll('[data-count]');
+      nums.forEach(function(el) {
+        countUp(el, parseFloat(el.dataset.count), parseInt(el.dataset.decimals));
+      });
+      kpiObserver.unobserve(e.target);
+    }
+  });
+}, { threshold: 0.3 });
+document.querySelectorAll('.kpi-grid').forEach(function(g) { kpiObserver.observe(g); });
+
+/* ══════════════════════════════════════════
+   3. Embedded GeoJSON
+══════════════════════════════════════════ */
+var ZONES = {
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "pangyo", "name": "판교테크노밸리", "color": "#2563eb",
+        "area_ha": 66, "core_station": "신분당선 판교역",
+        "emp_total": 91806, "pop_total": 59885,
+        "emp_density": 1391, "pop_density": 907, "job_pop_ratio": 1.53
+      },
+      "geometry": { "type": "Polygon", "coordinates": [
+        [[127.099,37.388],[127.105,37.3865],[127.112,37.386],
+         [127.12,37.3868],[127.1265,37.3878],[127.1285,37.391],[127.128,37.396],
+         [127.125,37.401],[127.119,37.403],[127.112,37.4025],[127.105,37.401],
+         [127.099,37.398],[127.097,37.394],[127.0975,37.3905],[127.099,37.388]]
+      ]}
+    },
+    {
+      "type": "Feature",
+      "properties": {
+        "id": "wirye", "name": "위례신도시 업무·상업용지", "color": "#dc2626",
+        "area_ha": 28, "core_station": "8호선 복정역",
+        "emp_total": 13028, "pop_total": 20200,
+        "emp_density": 465, "pop_density": 721, "job_pop_ratio": 0.65
+      },
+      "geometry": { "type": "Polygon", "coordinates": [
+        [[127.124,37.464],[127.131,37.463],[127.138,37.464],
+         [127.143,37.467],[127.145,37.471],[127.144,37.476],[127.14,37.48],
+         [127.134,37.482],[127.127,37.481],[127.122,37.478],[127.119,37.474],
+         [127.12,37.469],[127.122,37.4655],[127.124,37.464]]
+      ]}
+    }
+  ]
+};
+
+var ISO30 = {
+  "type": "FeatureCollection",
+  "features": [
+    { "type": "Feature", "properties": { "zone": "판교", "t_min": 30, "n_stations": 67 },
+      "geometry": { "type": "Polygon", "coordinates": [
+        [[127.11596,37.27549],[127.05164,37.28845],[127.04436,37.30206],
+         [126.97859,37.50294],[127.01735,37.54165],[127.07387,37.51114],
+         [127.29988,37.37339],[127.11596,37.27549]]
+      ]}},
+    { "type": "Feature", "properties": { "zone": "위례", "t_min": 30, "n_stations": 88 },
+      "geometry": { "type": "Polygon", "coordinates": [
+        [[127.10897,37.33986],[127.01630,37.48500],[127.01452,37.49392],
+         [127.04362,37.55549],[127.14102,37.60165],[127.16003,37.45203],
+         [127.10897,37.33986]]
+      ]}}
+  ]
+};
+
+var ISO60 = {
+  "type": "FeatureCollection",
+  "features": [
+    { "type": "Feature", "properties": { "zone": "판교", "t_min": 60, "n_stations": 345 },
+      "geometry": { "type": "Polygon", "coordinates": [
+        [[127.09625,37.20016],[126.96353,37.24310],[126.82389,37.49245],
+         [126.80186,37.56215],[126.91882,37.63640],[127.05760,37.66541],
+         [127.57050,37.29367],[127.49036,37.26030],[127.09625,37.20016]]
+      ]}},
+    { "type": "Feature", "properties": { "zone": "위례", "t_min": 60, "n_stations": 321 },
+      "geometry": { "type": "Polygon", "coordinates": [
+        [[127.09625,37.20016],[127.01569,37.26551],[126.85861,37.49470],
+         [126.82733,37.56687],[127.05535,37.67824],[127.19457,37.60419],
+         [127.22288,37.57955],[127.44219,37.26428],[127.09625,37.20016]]
+      ]}}
+  ]
+};
+
+/* ══════════════════════════════════════════
+   4. Leaflet Map
+══════════════════════════════════════════ */
+var map = L.map('leaflet-map').setView([37.432, 127.122], 11);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '&copy; <a href="https://openstreetmap.org">OpenStreetMap</a>', maxZoom: 18
+}).addTo(map);
+
+function zonePopup(p) {
+  return '<div style="min-width:190px">'
+    + '<div class="ptitle" style="color:' + p.color + '">' + p.name + '</div>'
+    + '<table class="ptbl">'
+    + '<tr><td>면적</td><td>' + p.area_ha + ' ha</td></tr>'
+    + '<tr><td>핵심역</td><td>' + p.core_station + '</td></tr>'
+    + '<tr><td>종사자수</td><td>' + p.emp_total.toLocaleString() + ' 명</td></tr>'
+    + '<tr><td>종사자밀도</td><td>' + p.emp_density + ' 명/ha</td></tr>'
+    + '<tr><td>인구밀도</td><td>' + p.pop_density + ' 명/ha</td></tr>'
+    + '<tr><td>직주비</td><td>' + p.job_pop_ratio + '</td></tr>'
+    + '</table></div>';
+}
+function isoPopup(p) {
+  var c = p.zone === '판교' ? '#2563eb' : '#dc2626';
+  return '<div><div class="ptitle" style="color:' + c + '">' + p.zone + ' ' + p.t_min + '분 등시간권</div>'
+    + '<table class="ptbl"><tr><td>도달 가능 역수</td><td>' + p.n_stations + ' 개</td></tr></table></div>';
+}
+
+/* Zone layers */
+var layerDefs = {
+  pangyo: L.geoJSON({ type: 'FeatureCollection', features: [ZONES.features[0]] }, {
+    style: function() { return { color: '#2563eb', weight: 2.5, fillColor: '#2563eb', fillOpacity: 0.13 }; },
+    onEachFeature: function(f, l) { l.bindPopup(zonePopup(f.properties)); }
+  }),
+  wirye: L.geoJSON({ type: 'FeatureCollection', features: [ZONES.features[1]] }, {
+    style: function() { return { color: '#dc2626', weight: 2.5, fillColor: '#dc2626', fillOpacity: 0.13 }; },
+    onEachFeature: function(f, l) { l.bindPopup(zonePopup(f.properties)); }
+  }),
+  iso30: L.geoJSON(ISO30, {
+    style: function(f) {
+      var iP = f.properties.zone === '판교';
+      return { color: iP ? '#7c3aed' : '#a855f7', weight: 1.5, fillColor: iP ? '#7c3aed' : '#a855f7', fillOpacity: 0.07, dashArray: '6,4' };
+    },
+    onEachFeature: function(f, l) { l.bindPopup(isoPopup(f.properties)); }
+  }),
+  iso60: L.geoJSON(ISO60, {
+    style: function(f) {
+      var iP = f.properties.zone === '판교';
+      return { color: iP ? '#0891b2' : '#0e7490', weight: 1.5, fillColor: iP ? '#0891b2' : '#0e7490', fillOpacity: 0.05, dashArray: '3,4' };
+    },
+    onEachFeature: function(f, l) { l.bindPopup(isoPopup(f.properties)); }
+  })
+};
+
+/* Zone area labels */
+function makeZoneLabel(lat, lng, html, cls) {
+  return L.marker([lat, lng], {
+    icon: L.divIcon({ className: '', html: '<div class="zone-lbl ' + cls + '">' + html + '</div>', iconSize: [80, 36], iconAnchor: [40, 18] }),
+    interactive: false
+  });
+}
+var zoneLabelGroup = L.layerGroup([
+  makeZoneLabel(37.395, 127.113, '판교테크노밸리<br>66 ha', 'p'),
+  makeZoneLabel(37.473, 127.133, '위례신도시<br>28 ha', 'w')
+]);
+layerDefs.pangyo.on('add', function() { zoneLabelGroup.addTo(map); });
+layerDefs.pangyo.on('remove', function() { map.removeLayer(zoneLabelGroup); });
+
+/* Station markers */
+var stationData = [
+  { name: '판교역', lat: 37.3944, lng: 127.1113, line: '신분당선', zone: 'p', core: true },
+  { name: '이매역', lat: 37.4040, lng: 127.1182, line: '분당선', zone: 'p', core: false },
+  { name: '야탑역', lat: 37.4110, lng: 127.1273, line: '분당선', zone: 'p', core: false },
+  { name: '복정역', lat: 37.4726, lng: 127.1318, line: '8호선', zone: 'w', core: true },
+  { name: '남위례역', lat: 37.4740, lng: 127.1497, line: '8호선', zone: 'w', core: false },
+  { name: '위례중앙역', lat: 37.4802, lng: 127.1380, line: '위례선(예정)', zone: 'w', core: false }
+];
+
+var stationGroup = L.layerGroup(stationData.map(function(s) {
+  var color = s.zone === 'p' ? '#2563eb' : '#dc2626';
+  var radius = s.core ? 8 : 5;
+  var marker = L.circleMarker([s.lat, s.lng], {
+    radius: radius, color: '#fff', weight: 2, fillColor: color, fillOpacity: 0.9
+  });
+  marker.bindPopup(
+    '<div><div class="ptitle" style="color:' + color + '">' + s.name + '</div>'
+    + '<table class="ptbl"><tr><td>노선</td><td>' + s.line + '</td></tr>'
+    + (s.core ? '<tr><td>역할</td><td>핵심 접근 거점</td></tr>' : '') + '</table></div>'
+  );
+  return marker;
+}));
+
+layerDefs.stations = stationGroup;
+['pangyo', 'wirye', 'iso30', 'stations'].forEach(function(k) { layerDefs[k].addTo(map); });
+zoneLabelGroup.addTo(map);
+
+var layerOn = { pangyo: true, wirye: true, iso30: true, iso60: false, stations: true };
+function toggleLayer(name) {
+  if (layerOn[name]) { map.removeLayer(layerDefs[name]); layerOn[name] = false; }
+  else               { layerDefs[name].addTo(map);        layerOn[name] = true; }
+  document.querySelector('[data-layer="' + name + '"]').classList.toggle('on', layerOn[name]);
+}
+
+/* ══════════════════════════════════════════
+   5. Chart.js
+══════════════════════════════════════════ */
+var B = '#2563eb', R = '#dc2626';
+var BA = 'rgba(37,99,235,.13)', RA = 'rgba(220,38,38,.13)';
+Chart.defaults.font.family = "'Malgun Gothic','Apple SD Gothic Neo',system-ui,sans-serif";
+Chart.defaults.font.size = 12;
+
+/* 직주비 */
+new Chart(document.getElementById('cRatio'), {
+  type: 'bar',
+  data: {
+    labels: ['판교테크노밸리', '위례신도시'],
+    datasets: [{ label: '직주비', data: [1.53, 0.65], backgroundColor: [B, R], borderRadius: 8, borderSkipped: false }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: { callbacks: { label: function(c) { return ' 직주비: ' + c.parsed.y.toFixed(2); } } }
+    },
+    scales: {
+      y: { beginAtZero: true, max: 2.2, grid: { color: '#f1f5f9' }, title: { display: true, text: '직주비' } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+/* 종사자밀도·인구밀도 */
+new Chart(document.getElementById('cDensity'), {
+  type: 'bar',
+  data: {
+    labels: ['종사자밀도', '인구밀도'],
+    datasets: [
+      { label: '판교테크노밸리', data: [1391, 907], backgroundColor: B, borderRadius: 8, borderSkipped: false },
+      { label: '위례신도시',     data: [465,  721], backgroundColor: R, borderRadius: 8, borderSkipped: false }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { position: 'top' },
+      tooltip: { callbacks: { label: function(c) { return ' ' + c.dataset.label + ': ' + c.parsed.y.toLocaleString() + ' 명/ha'; } } }
+    },
+    scales: {
+      y: { beginAtZero: true, grid: { color: '#f1f5f9' }, title: { display: true, text: '명/ha' } },
+      x: { grid: { display: false } }
+    }
+  }
+});
+
+/* 레이더 차트 — 정규화: 각 지표 최댓값=100 */
+new Chart(document.getElementById('cRadar'), {
+  type: 'radar',
+  data: {
+    labels: ['교통접근성\n(30분권 역수)', '종사자밀도', '직주비', '인구밀도', '종사자\n집적도'],
+    datasets: [
+      {
+        label: '판교테크노밸리',
+        data: [76.1, 100, 100, 100, 100],
+        borderColor: B, backgroundColor: BA, borderWidth: 2.5,
+        pointRadius: 5, pointBackgroundColor: B, pointBorderColor: '#fff', pointBorderWidth: 2
+      },
+      {
+        label: '위례신도시',
+        data: [100, 33.4, 42.5, 79.5, 14.2],
+        borderColor: R, backgroundColor: RA, borderWidth: 2.5,
+        pointRadius: 5, pointBackgroundColor: R, pointBorderColor: '#fff', pointBorderWidth: 2
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { position: 'top' },
+      tooltip: { callbacks: { label: function(c) { return ' ' + c.dataset.label + ': ' + c.parsed.r.toFixed(1); } } }
+    },
+    scales: {
+      r: {
+        beginAtZero: true, max: 110,
+        ticks: { display: false, stepSize: 25 },
+        grid: { color: '#e2e8f0' },
+        angleLines: { color: '#e2e8f0' },
+        pointLabels: { font: { size: 11 }, color: '#475569' }
+      }
+    }
+  }
+});
+
+/* 누적 접근성 곡선 */
+new Chart(document.getElementById('cCurve'), {
+  type: 'line',
+  data: {
+    labels: [0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50, 55, 60],
+    datasets: [
+      {
+        label: '판교테크노밸리',
+        data: [1, 2, 6, 14, 21, 39, 67, 94, 130, 185, 255, 296, 345],
+        borderColor: B, backgroundColor: BA, fill: true, tension: 0.35,
+        borderWidth: 2.5, pointRadius: 4, pointHoverRadius: 6
+      },
+      {
+        label: '위례신도시',
+        data: [1, 6, 14, 25, 46, 65, 88, 118, 144, 178, 235, 288, 321],
+        borderColor: R, backgroundColor: RA, fill: true, tension: 0.35,
+        borderWidth: 2.5, pointRadius: 4, pointHoverRadius: 6
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    interaction: { mode: 'index', intersect: false },
+    plugins: {
+      legend: { position: 'top' },
+      tooltip: {
+        callbacks: {
+          label: function(c) { return ' ' + c.dataset.label + ': ' + c.parsed.y + '개역'; },
+          afterBody: function(items) {
+            var t = Number(items[0].label);
+            if (t === 30) return ['', '  ↑ 위례가 판교보다 21개역 더 많음 (교통접근성 우위)'];
+            if (t === 60) return ['', '  ↑ 판교가 위례보다 24개역 더 많음 (60분 역전)'];
+            return [];
+          }
+        }
+      }
+    },
+    scales: {
+      x: { title: { display: true, text: '이동 시간 (분)' }, grid: { color: '#f1f5f9' } },
+      y: { beginAtZero: true, title: { display: true, text: '누적 도달 역수 (개)' }, grid: { color: '#f1f5f9' } }
+    }
+  }
+});
+</script>
+</body>
+</html>
